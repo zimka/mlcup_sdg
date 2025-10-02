@@ -164,6 +164,9 @@ RUN for i in {1..3}; do \
 RUN conda run -n worldscore gdown 1PpqVt1H4maBa_GbPJp4NwxRsd9jk-elh -O /workspace/droid.pth && \
     mv /workspace/droid.pth /workspace/worldscore/benchmark/metrics/checkpoints/
 
+# Download Tartan weight file
+RUN conda run -n worldscore gdown --fuzzy https://drive.google.com/file/d/1a0C5FTdhjM4rKrfXiGhec7eq2YM141lu/view?usp=drive_link -O /workspace/worldscore/benchmark/metrics/checkpoints/Tartan-C-T-TSKH-spring540x960-M.pth
+
 # Set up environment variables
 ENV WORLDSCORE_PATH=/workspace
 ENV MODEL_PATH=/workspace/models
