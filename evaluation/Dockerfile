@@ -167,6 +167,18 @@ RUN conda run -n worldscore gdown 1PpqVt1H4maBa_GbPJp4NwxRsd9jk-elh -O /workspac
 # Download Tartan weight file
 RUN conda run -n worldscore gdown --fuzzy https://drive.google.com/file/d/1a0C5FTdhjM4rKrfXiGhec7eq2YM141lu/view?usp=drive_link -O /workspace/worldscore/benchmark/metrics/checkpoints/Tartan-C-T-TSKH-spring540x960-M.pth
 
+RUN for i in {1..3}; do \
+wget -q -P /root/.cache/torch/hub/checkpoints https://download.pytorch.org/models/resnet34-b627a593.pth && break || sleep 10; \
+    done
+
+RUN for i in {1..3}; do \
+wget -q -P /root/.cache/torch/hub/checkpoints/ https://download.pytorch.org/models/vgg19-dcbb9e9d.pth && break || sleep 10; \
+    done
+
+# Turn off MotionSmoothnessMetric
+RUN mv worldscore/benchmark/metrics/third_party/motion_smoothness_metrics.py worldscore/benchmark/metrics/third_party/_motion_smoothness_metrics.py && \
+    echo "MotionSmoothnessMetric = lambda: None" >> worldscore/benchmark/metrics/third_party/motion_smoothness_metrics.py
+
 # Set up environment variables
 ENV WORLDSCORE_PATH=/workspace
 ENV MODEL_PATH=/workspace/models
@@ -180,7 +192,8 @@ ENV DATA_PATH=/workspace/data
 #    chmod +x /workspace/entrypoint.sh
 
 # Set entrypoint
-#ENTRYPOINT ["/workspace/entrypoint.sh"]
+COPY sample  /workspace/sample
+COPY eval_script.py /workspace/eval_mlcup.py
 
 # Default command
-CMD ["/bin/bash"]
+CMD ["/opt/conda/envs/worldscore/bin/python", "eval_mlcup.py", "sample/gt", "sample/pred/"]
