@@ -34,7 +34,7 @@ class MlCupMetricScorer:
         self._metrics = deepcopy(ASPECT_INFO)
 
     def __call__(self, image_paths: list[str]):
-        metrics_result = {}        
+        metrics_result = {}
         for aspect, aspect_data in ASPECT_INFO.items():
             if aspect in self.SKIP_ASPECTS:
                 continue
