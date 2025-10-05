@@ -1,6 +1,7 @@
 from copy import deepcopy
 from pathlib import Path
 import pprint
+import time
 
 from worldscore.benchmark.utils.utils import aspect_info as ASPECT_INFO
 from worldscore.benchmark.helpers.evaluator import renormalize_score
@@ -10,7 +11,7 @@ from worldscore.benchmark.metrics import CLIPScoreMetric, CLIPImageQualityAssess
 
 
 class MlCupMetricScorer:
-    SKIP_ASPECTS = ['motion_accuracy', 'motion_smoothness'] # 'motion_magnitude' estimates optical flow
+    SKIP_ASPECTS = ['motion_accuracy', 'motion_smoothness', 'motion_magnitude']
     SKIP_METRICS = [
         'camera_error', # TODO: camera intrinsics
         'reprojection_error', # TODO: CUDA error
@@ -34,24 +35,34 @@ class MlCupMetricScorer:
         self._metrics = deepcopy(ASPECT_INFO)
 
     def __call__(self, image_paths: list[str]):
-        metrics_result = {}        
+        metrics_result = {}
+        aspects_scores = []
+        t_init = time.time()
         for aspect, aspect_data in ASPECT_INFO.items():
             if aspect in self.SKIP_ASPECTS:
                 continue
             metrics_result[aspect] = {}
-
+            current_aspect_scores = []
             for metric_name, metric_data in aspect_data['metrics'].items():
                 if metric_name in self.SKIP_METRICS:
                     continue
-
+                t_start = time.time()
                 scorer_cls = self.METRIC_CLASSES[metric_name]
                 scorer = scorer_cls()
                 args = [image_paths]
                 if metric_name == "gram_matrix":
                     args = [image_paths[0], image_paths[1:]]
-                score_value = scorer._compute_scores(*args)
-                metrics_result[aspect][metric_name] = {'score' : score_value}
-        return renormalize_score(metrics_result)
+                score_value = scorer._compute_aspect_scores(*args)
+                current_aspect_scores.append(score_value)
+                metrics_result[aspect][metric_name] = {'score' : score_value, 'time' : time.time() - t_start}
+
+            if len(current_aspect_scores) > 0:
+                aspects_scores.append(sum(current_aspect_scores) / (len(current_aspect_scores)))
+
+        metrics_result = renormalize_score(metrics_result)
+        metrics_result['total_score'] = sum(aspects_scores) / (len(aspects_scores) + 1e-6)
+        metrics_result['total_time'] = time.time() - t_init
+        return metrics_result
 
 
 if __name__ == "__main__":
